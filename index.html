@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="description" content="Concept demo: an agent that watches official documents, detects meaningful change, explains the impact, drafts the update, and waits for a human to approve. Fictional company and data." />
+<title>Knowledge Maintenance Agent — Concept Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f4f2; --surface:#ffffff; --surface2:#eef0ec; --ink:#131a1e; --muted:#5c686f;
+    --line:#dde1dc; --line2:#cbd2cc;
+    --navy:#1e3a5f; --navy2:#2a5480;
+    --ok:#177245; --ok-bg:#e2f2e7;
+    --po:#1d5fd1; --po-bg:#e2ebfb;
+    --transfer:#0e7a8a; --transfer-bg:#dcf2f4;
+    --alt:#6d4fc2; --alt-bg:#ebe6fb;
+    --short:#c62828; --short-bg:#fde7e5;
+    --insuff:#b45309; --insuff-bg:#fef0d3;
+    --amber:#e8a317;
+    --shadow:0 1px 2px rgba(18,36,46,.06),0 8px 24px rgba(18,36,46,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  header{background:var(--navy);color:#eef4f6;padding:26px 20px 22px;border-bottom:5px solid var(--alt);position:relative}
+  .header-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:#b9c7da}
+  .live-dot i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--alt);margin-right:7px;box-shadow:0 0 0 3px rgba(109,79,194,.4)}
+  .demo-badge{background:var(--alt);color:#fff;font-weight:700;padding:3px 12px;border-radius:999px;letter-spacing:.06em}
+  header h1{font-family:"Barlow Condensed",sans-serif;font-size:clamp(36px,6vw,56px);line-height:.95;letter-spacing:.01em;text-transform:uppercase;font-weight:700;margin:14px 0 8px}
+  header h1 span{color:#c9b8f5}
+  .byline{font-size:15.5px;font-weight:600;letter-spacing:.05em;color:var(--amber);margin:0 0 12px}
+  header p{margin:2px 0;color:#b9c7da;font-size:15px;max-width:820px}
+  header p b{color:#fff}
+  #demobanner{background:var(--insuff-bg);border-bottom:2px solid var(--amber);padding:10px 20px;font-size:14.5px}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px 40px}
+  #flow{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin:18px 0 4px}
+  .step{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--navy2);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 12px}
+  .step b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:19px}
+  .step span{font-size:13px;color:var(--muted)}
+  .step.human{border-top-color:var(--amber)}
+  .arrow{align-self:center;color:var(--muted);font-weight:700}
+  .cols{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px}
+  .panel{flex:1;min-width:300px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  .panel h3{font-family:"Barlow Condensed",sans-serif;font-size:22px;margin:2px 0 8px}
+  .panel ul{margin:0;padding-left:18px}
+  .panel li{margin:6px 0}
+  .panel .small{color:var(--muted);font-size:13.5px}
+  #runbar{margin:20px 0 4px;text-align:left}
+  #runbtn{background:var(--alt);color:#fff;border:0;border-radius:12px;padding:14px 26px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+  #runbtn:disabled{background:var(--line2);color:var(--muted);cursor:default}
+  #runlog{margin-top:10px;font-size:14.5px;color:var(--muted);min-height:24px}
+  #stats{display:none;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--navy);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 16px;min-width:128px}
+  .tile b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:30px;line-height:1.05}
+  .tile span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .tile.t-await{border-top-color:var(--amber)} .tile.t-approved{border-top-color:var(--ok)} .tile.t-other{border-top-color:var(--alt)}
+  #findings{margin-top:10px}
+  .card{background:var(--surface);border:1px solid var(--line);border-left:7px solid var(--line2);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin:0 0 12px}
+  .card.c-MATERIAL{border-left-color:var(--short)} .card.c-MINOR{border-left-color:var(--po)}
+  .card.c-EDITORIAL{border-left-color:var(--ok)} .card.c-CONFLICT{border-left-color:var(--alt)}
+  .card.c-SUPERSEDED{border-left-color:var(--transfer)}
+  .chip{font-weight:700;padding:3px 10px;border-radius:999px;font-size:12px;white-space:nowrap;letter-spacing:.02em}
+  .MATERIAL{background:var(--short-bg);color:var(--short)} .MINOR{background:var(--po-bg);color:var(--po)}
+  .EDITORIAL{background:var(--ok-bg);color:var(--ok)} .CONFLICT{background:var(--alt-bg);color:var(--alt)}
+  .SUPERSEDED{background:var(--transfer-bg);color:var(--transfer)}
+  .change{background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:14.5px;margin:8px 0}
+  .draft{background:var(--ok-bg);border:1px dashed var(--ok);border-radius:10px;padding:10px 12px;font-size:14.5px;margin:8px 0}
+  .nodraft{background:var(--alt-bg);border:1px dashed var(--alt);border-radius:10px;padding:10px 12px;font-size:14.5px;margin:8px 0}
+  .btn{padding:10px 18px;border-radius:10px;border:0;font-size:15px;font-weight:600;cursor:pointer;margin:8px 8px 0 0}
+  .approve{background:var(--ok);color:#fff}.reject{background:var(--short);color:#fff}
+  .ghost{background:var(--surface2);color:var(--navy)}
+  .small{color:var(--muted);font-size:13.5px}
+  .outcome{font-weight:700;margin-top:8px}
+  #done{display:none;background:var(--ok-bg);border:1px solid var(--ok);border-radius:var(--radius);padding:14px 16px;margin:6px 0 14px}
+  #log{background:var(--surface);border-top:3px solid var(--navy);padding:14px 20px 26px;margin-top:18px}
+  #log h3{font-family:"Barlow Condensed",sans-serif;font-size:22px;margin:4px 0 8px}
+  footer{padding:16px 20px 26px;color:var(--muted);font-size:13px;max-width:1060px;margin:0 auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <span class="live-dot"><i></i> Knowledge Agent · Concept Demo</span>
+    <span class="demo-badge">Fictional company · Fictional data</span>
+  </div>
+  <h1>Knowledge Maintenance Agent <span>— Demo</span></h1>
+  <p class="byline">A working model of an idea, built to be clicked</p>
+  <p>The agent watches the official source documents. When one changes, it works out which hub pages are affected, explains the change in plain words, and drafts the update. <b>It never publishes anything.</b> A human decides, every time.</p>
+</header>
+
+<div id="demobanner"><b>Concept demo.</b> Northfield Manufacturing does not exist. Neither do its people or documents. This page is not connected to any real system, and nothing you click is saved: refresh the page and the demo resets.</div>
+
+<div class="wrap">
+  <div id="flow">
+    <div class="step"><b>1 · Watched sources</b><span>The official documents, and their approved versions</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>2 · Agent compares</b><span>New version against approved version, meaning not just words</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>3 · Findings explained</b><span>Each change sorted, its impact spelled out</span></div>
+    <div class="arrow">→</div>
+    <div class="step human"><b>4 · Human decides</b><span>Approve, reject, defer or escalate. The agent waits.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>5 · Pages updated</b><span>Only the approved drafts, applied by the page owner</span></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Watched sources (approved versions)</h3>
+      <ul>
+        <li><b>Service Desk Directory</b> — v14 <span class="small">· who to contact, and how</span></li>
+        <li><b>Information Security Standard IS-04</b> — reissue 2026.1 <span class="small">· the security rules</span></li>
+        <li><b>IT Services Catalogue</b> — current edition <span class="small">· what IT offers</span></li>
+        <li><b>Hardware Asset Standard HA-02</b> — current edition <span class="small">· how long devices last</span></li>
+        <li><b>Software Request Standard SR-01</b> — v5 <span class="small">· how to ask for software</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Hub pages kept in line with them</h3>
+      <ul>
+        <li><b>Escalation Guide</b> <span class="small">· follows the Service Desk Directory</span></li>
+        <li><b>Security Basics</b> <span class="small">· follows IS-04</span></li>
+        <li><b>Laptop &amp; Devices</b> <span class="small">· follows the Catalogue and HA-02</span></li>
+        <li><b>How to Request Software</b> <span class="small">· follows SR-01</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="runbar">
+    <button id="runbtn" onclick="runCheck()">Run the morning check</button>
+    <div id="runlog">The agent runs on a schedule. Press the button to run today's check now.</div>
+  </div>
+
+  <div id="stats"></div>
+  <div id="done"></div>
+  <div id="findings"></div>
+
+  <div style="margin-top:6px">
+    <button class="btn ghost" onclick="resetDemo()">Reset the demo</button>
+  </div>
+</div>
+
+<div id="log"><div class="wrap" style="padding:0"><h3>Decision log</h3><div id="logrows" class="small">No decisions yet. Every decision in this demo is written here, with its time.</div></div></div>
+
+<footer>
+  In a real organisation this flow runs inside the organisation's own systems and security boundary (for example, its Microsoft tenant: a Copilot Studio front door, SharePoint as the hub, and an approvals workflow underneath), watching real sources with named owners for every page. This demo is a standalone model of that flow, built with fictional data so the idea can be seen and clicked before anything is built for real.<br><br>
+  Concept demo built by Anahita Jacobsen · Fictional data only · Nothing here is connected to, or taken from, any real company's systems or documents.
+</footer>
+
+<script>
+const FINDINGS = [
+  { id:"F1", cls:"MATERIAL", title:"The support contact changed",
+    source:"Service Desk Directory — v15 published (approved version was v14)",
+    change:"Support Owner: Daniel Meyer → Priya Nair. After-hours phone: +1 (555) 014-2200 → +1 (555) 014-2275.",
+    affects:"Escalation Guide (hub page) — the old name and number appear in 2 places.",
+    meaning:"Anyone following the guide tonight would call the wrong person, on a number that no longer answers.",
+    draft:"For urgent issues after hours, contact Priya Nair, Support Owner, on +1 (555) 014-2275.",
+    actions:[["approve","Approve draft","approve"],["reject","Reject","reject"],["defer","Defer","ghost"]] },
+  { id:"F2", cls:"EDITORIAL", title:"A standard was reissued, words only",
+    source:"Information Security Standard IS-04 — reissue 2026.2 (approved version was 2026.1)",
+    change:"Wording and typos fixed in 6 paragraphs. No rule, date, owner or requirement changed.",
+    affects:"Security Basics (hub page) summarises IS-04 — every summary is still accurate.",
+    meaning:"Nothing a reader relies on has changed. The finding is logged so the check itself leaves a trail.",
+    draft:null, nodraft:"No draft. The agent recommends: no change needed.",
+    actions:[["confirm","Confirm: no change","approve"],["flag","Flag for a second look","ghost"]] },
+  { id:"F3", cls:"CONFLICT", title:"Two official sources disagree",
+    source:"IT Services Catalogue vs Hardware Asset Standard HA-02 — both current and approved",
+    change:"The Catalogue says laptops are refreshed every 4 years. HA-02 says every 5 years.",
+    affects:"Laptop & Devices (hub page) — it quotes the Catalogue's 4 years.",
+    meaning:"The agent cannot know which source is right, and it must not guess. A disagreement between sources is a human problem, not an editing problem.",
+    draft:null, nodraft:"No draft, on purpose. Conflicts are escalated to the two document owners, never silently resolved.",
+    actions:[["escalate","Escalate to the owners","approve"],["defer","Defer","ghost"]] },
+  { id:"F4", cls:"SUPERSEDED", title:"A standard was replaced by a new version",
+    source:"Software Request Standard SR-01 — v6 now approved (pages still point at v5)",
+    change:"v6 replaces v5. Requests over $500 now need a manager's approval. The old limit was $250.",
+    affects:"How to Request Software (hub page) — it links to v5 and quotes the old $250 limit.",
+    meaning:"Staff following the page would use an out-of-date limit and follow a dead link.",
+    draft:"Software requests over $500 need your manager's approval. See Software Request Standard SR-01 v6.",
+    actions:[["approve","Approve draft","approve"],["reject","Reject","reject"],["defer","Defer","ghost"]] }
+];
+const OUTCOME = { approve:"Approved — draft accepted", reject:"Rejected — draft sent back", defer:"Deferred",
+                  confirm:"Confirmed — no change needed", flag:"Flagged for a second look", escalate:"Escalated to the document owners" };
+let DECISIONS = {};   // fid -> {action, at}
+let RAN = false;
+
+function decidedCount(){ return Object.keys(DECISIONS).length; }
+function positiveCount(){ return Object.values(DECISIONS).filter(d=>d.action==="approve"||d.action==="confirm").length; }
+
+function renderStats(){
+  const total=FINDINGS.length, dec=decidedCount(), pos=positiveCount();
+  const tiles=[["Findings",total,""],["Awaiting decision",total-dec,"t-await"],["Approved / confirmed",pos,"t-approved"],["Decided another way",dec-pos,"t-other"]];
+  const st=document.getElementById("stats");
+  st.style.display="flex";
+  st.innerHTML=tiles.map(t=>`<div class="tile ${t[2]}"><b>${t[1]}</b><span>${t[0]}</span></div>`).join("");
+  const done=document.getElementById("done");
+  if(dec===total){
+    done.style.display="block";
+    done.innerHTML=`<b>Check complete.</b> Every finding has a human decision. The ${pos} approved item(s) would now be applied by the page owners. The agent itself published nothing — that is the point of the design.`;
+  } else { done.style.display="none"; }
+}
+
+function renderFindings(){
+  const box=document.getElementById("findings"); box.innerHTML="";
+  for(const f of FINDINGS){
+    const d=DECISIONS[f.id];
+    const c=document.createElement("div"); c.className="card c-"+f.cls;
+    let h=`<div><span class="chip ${f.cls}">${f.cls}</span> &nbsp;<b>${f.title}</b></div>
+           <p class="small" style="margin:6px 0 0">${f.source}</p>
+           <div class="change"><b>What changed:</b> ${f.change}</div>
+           <p style="margin:4px 0"><b>Affected:</b> ${f.affects}</p>
+           <p style="margin:4px 0"><b>What this means:</b> ${f.meaning}</p>`;
+    if(f.draft) h+=`<div class="draft"><b>Draft update, written by the agent, waiting for a human:</b><br>“${f.draft}”</div>`;
+    else h+=`<div class="nodraft">${f.nodraft}</div>`;
+    if(d){
+      h+=`<p class="outcome">Decision: ${OUTCOME[d.action]} <span class="small">${d.at}</span></p>`;
+    } else {
+      h+=f.actions.map(a=>`<button class="btn ${a[2]}" onclick="decide('${f.id}','${a[0]}')">${a[1]}</button>`).join("");
+    }
+    c.innerHTML=h; box.appendChild(c);
+  }
+}
+
+function renderLog(){
+  const rows=Object.entries(DECISIONS).sort((a,b)=>a[1].at<b[1].at?-1:1);
+  document.getElementById("logrows").innerHTML = rows.length
+    ? rows.map(([fid,d])=>{ const f=FINDINGS.find(x=>x.id===fid); return `${d.at} — ${fid} (${f.cls.toLowerCase()}, ${f.title.toLowerCase()}): <b>${OUTCOME[d.action]}</b>`; }).join("<br>")
+    : "No decisions yet. Every decision in this demo is written here, with its time.";
+}
+
+function decide(fid, action){
+  DECISIONS[fid]={action, at:new Date().toISOString()};
+  renderStats(); renderFindings(); renderLog();
+}
+
+function runCheck(){
+  if(RAN) return; RAN=true;
+  const btn=document.getElementById("runbtn"); btn.disabled=true; btn.textContent="Checking…";
+  const log=document.getElementById("runlog");
+  const lines=["Reading the 5 watched sources…","Comparing each one against its approved version…","Checking the 4 hub pages for impact…","4 changes found. Nothing has been changed. Every item below is waiting for a human."];
+  lines.forEach((line,i)=>{ setTimeout(()=>{ log.textContent=line;
+    if(i===lines.length-1){ btn.textContent="Morning check complete"; renderStats(); renderFindings(); renderLog();
+      const f=document.getElementById("findings"); if(f.scrollIntoView) f.scrollIntoView({behavior:"smooth"}); }
+  }, 500*(i+1)); });
+}
+
+function resetDemo(){
+  DECISIONS={}; RAN=false;
+  const btn=document.getElementById("runbtn"); btn.disabled=false; btn.textContent="Run the morning check";
+  document.getElementById("runlog").textContent="The agent runs on a schedule. Press the button to run today's check now.";
+  document.getElementById("stats").style.display="none";
+  document.getElementById("done").style.display="none";
+  document.getElementById("findings").innerHTML="";
+  renderLog();
+}
+</script>
+</body>
+</html>
